@@ -24,10 +24,7 @@ async function resolveWorkerByParam(workerIdParam) {
 
 function canAccessWorker(user, worker) {
   if (!user) return false;
-  if (user.role === "admin" || user.role === "doctor") return true;
-  if (user.role === "staff") {
-    return Boolean(worker?.createdBy) && worker.createdBy.toString() === String(user.id);
-  }
+  if (user.role === "admin" || user.role === "doctor" || user.role === "staff") return true;
   return false;
 }
 
