@@ -2,6 +2,18 @@ const DEFAULT_HEADERS = {
   "Content-Type": "application/json",
 };
 
+function getApiBaseUrl() {
+  // Vite exposes env vars via import.meta.env. Only variables prefixed with VITE_ are available.
+  const raw = import.meta.env.VITE_API_BASE_URL;
+  if (!raw) return "";
+  return String(raw).replace(/\/+$/, "");
+}
+
+function withBaseUrl(path) {
+  const baseUrl = getApiBaseUrl();
+  return baseUrl ? `${baseUrl}${path}` : path;
+}
+
 function getToken() {
   return localStorage.getItem("hms_token");
 }
@@ -19,7 +31,7 @@ async function request(path, { method = "GET", body, auth = false } = {}) {
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(path, {
+  const res = await fetch(withBaseUrl(path), {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
@@ -44,7 +56,7 @@ async function requestForm(path, { method = "POST", formData, auth = false } = {
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(path, {
+  const res = await fetch(withBaseUrl(path), {
     method,
     headers,
     body: formData,
