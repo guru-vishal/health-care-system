@@ -29,6 +29,13 @@ async function start() {
   app.use(express.json({ limit: "1mb" }));
   app.use(morgan("dev"));
 
+  app.use(
+  cors({
+    origin: "https://health-care-system-eta.vercel.app",
+    credentials: true,
+  })
+);
+
   // Serve uploaded report files
   app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
