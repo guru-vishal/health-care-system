@@ -73,6 +73,30 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function openFromUrl() {
+      try {
+        const params = new URLSearchParams(window.location.search || "");
+        const wid = params.get("workerId") || params.get("wid");
+        if (!wid) return;
+
+        const worker = await api.getWorker(wid);
+        if (cancelled) return;
+        const normalized = normalizeWorker(worker);
+        setSelectedWorker(normalized);
+        setCurrentPage("profile");
+      } catch {
+        // ignore invalid ids / fetch errors
+      }
+    }
+
+    openFromUrl();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const showNotification = (message, type = "success") => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3500);

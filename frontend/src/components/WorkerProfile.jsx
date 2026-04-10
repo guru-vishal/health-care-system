@@ -16,6 +16,7 @@ export default function WorkerProfile({ worker, navigate, currentUser }) {
 	const [records, setRecords] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [qrUrl, setQrUrl] = useState(null);
+	const [qrValue, setQrValue] = useState(null);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -42,13 +43,33 @@ export default function WorkerProfile({ worker, navigate, currentUser }) {
 		async function gen() {
 			if (!wid) return;
 			try {
+				const value = (() => {
+					try {
+						if (typeof window !== "undefined" && window.location?.origin) {
+							const u = new URL(window.location.origin);
+							u.searchParams.set("workerId", String(wid));
+							return u.toString();
+						}
+					} catch {
+						// ignore
+					}
+					return String(wid);
+				})();
+
 				const url = await QRCode.toDataURL(String(wid), {
 					margin: 1,
 					width: 320,
 				});
-				if (!cancelled) setQrUrl(url);
+				const url2 = value === String(wid) ? url : await QRCode.toDataURL(value, { margin: 1, width: 320 });
+				if (!cancelled) {
+					setQrValue(value);
+					setQrUrl(url2);
+				}
 			} catch {
-				if (!cancelled) setQrUrl(null);
+				if (!cancelled) {
+					setQrValue(null);
+					setQrUrl(null);
+				}
 			}
 		}
 		gen();
@@ -172,7 +193,7 @@ export default function WorkerProfile({ worker, navigate, currentUser }) {
 						<div className="text-slate-400 text-sm mt-1">
 							Scan this in QR Lookup to open the profile.
 						</div>
-						<div className="text-slate-300 text-sm mt-2">Value: {wid}</div>
+						<div className="text-slate-300 text-sm mt-2">Value: {qrValue || wid}</div>
 					</div>
 					<div className="shrink-0">
 						{qrUrl ? (

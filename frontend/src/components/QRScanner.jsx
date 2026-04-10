@@ -2,6 +2,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import { BrowserQRCodeReader } from "@zxing/browser";
 
+function isHttpUrl(value) {
+	try {
+		const u = new URL(String(value));
+		return u.protocol === "http:" || u.protocol === "https:";
+	} catch {
+		return false;
+	}
+}
+
+function getWorkerIdFromUrl(value) {
+	try {
+		const u = new URL(String(value));
+		return u.searchParams.get("workerId") || u.searchParams.get("wid") || "";
+	} catch {
+		return "";
+	}
+}
+
 function supportsQrBarcodeDetector() {
 	return (
 		typeof window !== "undefined" &&
@@ -60,6 +78,28 @@ export default function QRScanner({ workers, navigate, setSelectedWorker }) {
 		}
 	}, [navigate, setSelectedWorker, workers]);
 
+	const handleScannedValue = useCallback(async (value) => {
+		const raw = String(value || "").trim();
+		if (!raw) return;
+
+		// If QR contains a URL, either:
+		// - open the worker profile in-app (when URL contains workerId)
+		// - otherwise redirect the browser to the scanned URL
+		if (isHttpUrl(raw)) {
+			const wid = getWorkerIdFromUrl(raw);
+			if (wid) {
+				await lookupWorker(wid);
+				return;
+			}
+			setStatus({ type: "success", message: "Redirecting…" });
+			window.location.assign(raw);
+			return;
+		}
+
+		// Otherwise treat it as a Worker ID
+		await lookupWorker(raw);
+	}, [lookupWorker]);
+
 	useEffect(() => {
 		let rafId = null;
 		let detector = null;
@@ -115,7 +155,7 @@ export default function QRScanner({ workers, navigate, setSelectedWorker }) {
 								if (value) {
 									setWorkerId(value);
 									setScanning(false);
-									await lookupWorker(value);
+									await handleScannedValue(value);
 									return;
 								}
 							}
@@ -141,7 +181,7 @@ export default function QRScanner({ workers, navigate, setSelectedWorker }) {
 						if (!value || cancelled) return;
 						setWorkerId(value);
 						setScanning(false);
-						lookupWorker(value);
+						handleScannedValue(value);
 					}
 				);
 				zxingControlsRef.current = controls;
@@ -160,7 +200,7 @@ export default function QRScanner({ workers, navigate, setSelectedWorker }) {
 			cancelled = true;
 			if (rafId) cancelAnimationFrame(rafId);
 		};
-	}, [scanning, canScan, lookupWorker]);
+	}, [scanning, canScan, handleScannedValue]);
 
 	useEffect(() => {
 		// stop camera when scanning toggles off/unmount
@@ -213,7 +253,7 @@ export default function QRScanner({ workers, navigate, setSelectedWorker }) {
 						/>
 						<button
 							type="button"
-							onClick={() => lookupWorker(workerId)}
+							onClick={() => handleScannedValue(workerId)}
 							className="px-5 py-3 rounded-2xl bg-teal-500/90 hover:bg-teal-400 text-slate-950 font-semibold transition-all"
 						>
 							Search
