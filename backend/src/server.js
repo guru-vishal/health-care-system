@@ -22,19 +22,19 @@ async function start() {
   app.use(helmet());
   app.use(
     cors({
-      origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : "*",
+      origin: ["https://health-care-system-eta.vercel.app",
+        "https://health-care-system-git-master-guruvishals-projects.vercel.app",
+        "https://health-care-system-2kngs0wxz-guruvishals-projects.vercel.app"
+      ],
+      methods: ["GET", "POST", "PUT", "DELETE"],
       credentials: true,
-    })
+    }),
   );
+
+  // Handle preflight requests
+  app.options("*", cors());
   app.use(express.json({ limit: "1mb" }));
   app.use(morgan("dev"));
-
-  app.use(
-  cors({
-    origin: "https://health-care-system-eta.vercel.app",
-    credentials: true,
-  })
-);
 
   // Serve uploaded report files
   app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
